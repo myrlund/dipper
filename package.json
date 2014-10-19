@@ -1,0 +1,31 @@
+{
+  "name": "Dipper",
+  "version": "0.0.1",
+  "description": "An extremely simple DI library for Node.js.",
+  "main": "dipper.js",
+  "dependencies": {
+    "floyd": "^0.0.3",
+    "q": "^1.0.1",
+    "underscore": "^1.7.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/myrlund/dipper"
+  },
+  "keywords": [
+    "dependency",
+    "injection",
+    "library",
+    "bootstrap"
+  ],
+  "author": "Jonas Myrlund",
+  "license": "BSD",
+  "bugs": {
+    "url": "https://github.com/myrlund/dipper/issues"
+  },
+  "homepage": "https://github.com/myrlund/dipper"
+}

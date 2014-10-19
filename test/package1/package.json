@@ -1,0 +1,5 @@
+{
+  "main": "foobar",
+  "provides": ["package1-1"],
+  "consumes": ["package2-1"]
+}
