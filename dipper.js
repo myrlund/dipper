@@ -1,6 +1,5 @@
 var _ = require('underscore');
 var Q = require('q');
-var EventEmitter = require('events').EventEmitter;
 
 var packages = require('./packages');
 
@@ -21,11 +20,6 @@ function Dipper(options) {
     // Allow for providing package config directly
     this.packageConfig = this.options.packageConfig;
 }
-Dipper.prototype = Object.create(EventEmitter.prototype, {
-    constructor: {
-        value: Dipper
-    }
-});
 
 Dipper.prototype.getPackageConfig = function () {
     return this.packageConfig ?
