@@ -12,7 +12,7 @@ module.exports = {
 
 function loadConfig(filename) {
     try {
-        return Q.resolve(require(filename).services);
+        return Q.resolve(require(filename).packages);
     } catch (e) {
         if (e.code !== 'MODULE_NOT_FOUND') {
             throw e;
