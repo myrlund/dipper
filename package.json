@@ -4,11 +4,15 @@
   "description": "An extremely simple DI library for Node.js.",
   "main": "dipper.js",
   "dependencies": {
-    "floyd": "^0.0.3",
     "q": "^1.0.1",
+    "topo": "^1.0.2",
     "underscore": "^1.7.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "chai": "^1.9.2",
+    "mocha": "^2.0.1",
+    "sinon": "^1.10.3"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
