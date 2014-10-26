@@ -1,0 +1,8 @@
+{
+  "random": "config thing",
+  "services": [
+    "./package1",
+    "./package2",
+    "./package3"
+  ]
+}

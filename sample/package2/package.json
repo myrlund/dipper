@@ -1,4 +1,4 @@
 {
   "provides": ["package2-1"],
-  "consumes": []
+  "consumes": ["package3-1"]
 }

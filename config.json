@@ -1,7 +1,0 @@
-{
-  "random": "config thing",
-  "packages": [
-    {"path": "./test/package1"},
-    {"path": "./test/package2"}
-  ]
-}
