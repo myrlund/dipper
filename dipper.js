@@ -28,41 +28,45 @@ Dipper.prototype.getPackageConfig = function () {
 };
 
 Dipper.prototype.loadPackages = function () {
-    return this.getPackageConfig()
-        .then(packages.loadAll)
-        .then(function (packages) {
-            this.packages = packages;
-        }.bind(this));
+    return this.getPackageConfig().then(packages.loadAll);
 };
 
-Dipper.prototype.setupServices = function () {
+Dipper.prototype.setupServices = function (packages) {
     var self = this;
 
     // Initialize the service registry.
-    self.serviceRegistry = {};
+    var serviceRegistry = {};
 
-    return Q.all(this.packages.map(function (package) {
+    var setupAllServices = Q.all(packages.map(function (package) {
         var deferred = Q.defer();
 
         // Grab only the package's imports from the service registry.
-        var packageImports = _.pick(self.serviceRegistry, package.meta.consumes);
+        var packageImports = _.pick(serviceRegistry, package.meta.consumes);
 
         // Utility for calculating package services pending registration.
         var getRemainingServices = function () {
-            return _.difference(package.meta.provides || [], Object.keys(self.serviceRegistry));
+            return _.difference(package.meta.provides || [], Object.keys(serviceRegistry));
         };
 
-        // Call the setup function with options, imports, and registry callback.
-        package.setupFn(package.meta, packageImports, function (namespace, exports) {
-            _.each(exports, function (provision, key) {
-                self.serviceRegistry[key] = provision;
+        var addExportsToServiceRegistry = function (exports) {
+            // Add each exported service to the service registry.
+            _.each(exports, function (service, serviceName) {
+                serviceRegistry[serviceName] = service;
             });
 
             // Resolve when all provided services are registered.
             if (getRemainingServices().length === 0) {
                 deferred.resolve();
             }
-        });
+        };
+
+        // Call the setup function with options, imports, and registry callback.
+        var syncExports = package.setupFn(package.meta, packageImports, addExportsToServiceRegistry);
+
+        // Allow for simply returning synchronous exports.
+        if (_.isObject(syncExports)) {
+            addExportsToServiceRegistry(syncExports);
+        }
 
         // Resolve immediately if no async services are pending.
         if (getRemainingServices().length === 0) {
@@ -71,19 +75,22 @@ Dipper.prototype.setupServices = function () {
 
         // Require registry callback within the configured setupTimeout.
         setTimeout(function () {
-            deferred.reject(new Error('Package ' + service.name + ' did not register services: ' + getRemainingServices().join(', ')));
+            deferred.reject(new Error('Package ' + package.name + ' did not register services: ' + getRemainingServices().join(', ')));
         }, self.options.setupTimeout);
 
         return deferred.promise;
     }));
+
+    // When all services are set up, return the service registry.
+    return setupAllServices.then(function () {
+        return serviceRegistry;
+    });
 };
 
 Dipper.prototype.bootstrap = function () {
-    return this.loadPackages()
-        .then(this.setupServices.bind(this))
-        .then(function () {
-            return this.serviceRegistry;
-        }.bind(this));
+    var setupServices = this.setupServices.bind(this);
+
+    return this.loadPackages().then(setupServices);
 };
 
 module.exports = exports;
