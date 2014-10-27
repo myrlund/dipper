@@ -1,7 +1,7 @@
 Dipper.js
 =========
 
-An lightweight promise-driven dependency injection library for Node.js. Heavily inspired by [Cloud9](https://c9.io/)'s [Architect](https://github.com/c9/architect/).
+An lightweight promise-driven dependency injection library for Node.js. Heavily inspired by, and mostly compatible with, [Cloud9](https://c9.io/)'s [Architect](https://github.com/c9/architect/).
 
 Usage
 -----
@@ -18,7 +18,7 @@ In a bit more detail...
 
 ### 1. Application configuration
 
-Packages are passed to `dipper.createApplication`, or set up in a JSON configuration file – by default `./config.json` – in the following manner:
+Packages are passed to `dipper.createApplication`, or set up in a JSON or Javascript configuration file – by default `./config.json` – in the following manner:
 
 ```json
 {
@@ -29,13 +29,15 @@ Packages are passed to `dipper.createApplication`, or set up in a JSON configura
 }
 ```
 
+The location of the config file can be set using the `configFile` option. The config can also be passed directly with the `config` option.
+
 ### 2. Package configuration
 
 Each package requires a `package.json` in its root directory:
 
 ```javascript
 {
-  "name": "Service 1", // optional (defaults to: last part of package path)
+  "name": "Service 1", // optional (defaults to last part of package path)
   "main": "entry.js",  // the package's entry point (defaults to: name || 'index')
   "consumes": ["service2"], // package imports. must be provided by another package.
   "provides": ["service1"]  // package exports. can be consumed by other packages.
@@ -51,11 +53,13 @@ The entry point of each package must export a setup function, through which it i
 module.exports = function (options, imports, register) {
     var someServer = require('./someServer').setup(imports.service2);
     
-    register({
+    register(null, {
         service1: someServer
     });
 };
 ```
+
+Note that the `register` callback has a node-style error parameter as its first argument. Pass a falsy value to indicate success.
 
 ### 3. Bootstrap the application
 
@@ -64,9 +68,10 @@ Bring it all together. Finally, in your main application module:
 ```javascript
 var dipper = require('dipper');
 
-dipper.createApplication(yourConfig).then(function (services) {
-    services.service1.start();
-});
+dipper.createApplication(yourConfig).then(function (app) {
+    app.services.service1.start();
+})
+.done();
 ```
 
 API
