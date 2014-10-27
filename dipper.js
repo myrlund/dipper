@@ -66,7 +66,23 @@ function setupServices(options, packages) {
     // Initialize the service registry.
     var serviceRegistry = {};
 
-    var setupAllServices = Q.all(packages.map(function (package) {
+    var setupPackage = packageBootstrapper(options, serviceRegistry);
+
+    // Make sure setup functions run in sequence.
+    var allSetup = packages.reduce(function (promiseChain, package) {
+        return promiseChain.then(function () {
+            return setupPackage(package);
+        });
+    }, Q())
+
+    // When all services are set up, return the service registry.
+    return allSetup.then(function () {
+        return serviceRegistry;
+    });
+};
+
+function packageBootstrapper(options, serviceRegistry) {
+    return function (package) {
         var deferred = Q.defer();
 
         // Grab only the package's imports from the service registry.
@@ -77,7 +93,11 @@ function setupServices(options, packages) {
             return _.difference(package.meta.provides || [], Object.keys(serviceRegistry));
         };
 
-        var addExportsToServiceRegistry = function (exports) {
+        var addExportsToServiceRegistry = function (err, exports) {
+            if (err) {
+                deferred.reject(err);
+            }
+
             // Add each exported service to the service registry.
             _.each(exports, function (service, serviceName) {
                 serviceRegistry[serviceName] = service;
@@ -90,11 +110,11 @@ function setupServices(options, packages) {
         };
 
         // Call the setup function with options, imports, and registry callback.
-        var syncExports = package.setupFn(package.meta, packageImports, addExportsToServiceRegistry);
+        var syncExports = package.setupFn(package, packageImports, addExportsToServiceRegistry);
 
         // Allow for simply returning synchronous exports.
         if (_.isObject(syncExports)) {
-            addExportsToServiceRegistry(syncExports);
+            addExportsToServiceRegistry(null, syncExports);
         }
 
         // Resolve immediately if no async services are pending.
@@ -108,13 +128,8 @@ function setupServices(options, packages) {
         }, options.setupTimeout);
 
         return deferred.promise;
-    }));
-
-    // When all services are set up, return the service registry.
-    return setupAllServices.then(function () {
-        return serviceRegistry;
-    });
-};
+    };
+}
 
 /**
  * @returns the imports for the given package.

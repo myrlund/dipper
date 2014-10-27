@@ -25,12 +25,20 @@ module.exports = {
     getEntryPoint: function (packagePath, prioritizedNames) {
         // Try each entry point in turn, looking for existing files.
         for (var i = 0; i < prioritizedNames.length; i++) {
-            var filename = path.resolve(path.join(packagePath, prioritizedNames[i] + '.js'));
-            if (!isFile(filename)) {
+            var filename = prioritizedNames[i];
+
+            // Append .js if not there.
+            var ext = '.js';
+            if (filename.substring(filename.length - ext.length, filename.length) !== ext) {
+                filename += ext;
+            }
+
+            var fqn = path.resolve(path.join(packagePath, filename));
+            if (!isFile(fqn)) {
                 continue;
             }
 
-            return require(filename);
+            return require(fqn);
         }
         return null;
     }

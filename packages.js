@@ -12,7 +12,8 @@ module.exports = {
 
 function loadConfig(filename) {
     try {
-        return Q.resolve(require(filename).packages);
+        var config = require(filename);
+        return Q.resolve(_.isArray(config) ? config : config.packages);
     } catch (e) {
         if (e.code !== 'MODULE_NOT_FOUND') {
             throw e;
@@ -44,8 +45,17 @@ function loadPackageMetas(packages) {
             package = { path: package };
         }
 
+        // Architect compatibility
+        if (!package.path && package.packagePath) {
+            package.path = package.packagePath;
+        }
+
+        // If absolute path, resolve to node_modules
+        var pathPrefix = package.path[0] === '.' ? '' : './node_modules';
+        package.resolvedPath = path.join(pathPrefix, package.path);
+
         // Grab service metadata from the service.json file.
-        var packageInfoPath = path.resolve(path.join(package.path, 'package.json'));
+        var packageInfoPath = path.resolve(path.join(package.resolvedPath, 'package.json'));
         try {
             package.meta = require(packageInfoPath);
         } catch (e) {
@@ -58,6 +68,12 @@ function loadPackageMetas(packages) {
         // Service name defaults to the last piece of the path.
         var pathComponents = package.path.split(path.sep);
         package.name = package.meta.name || pathComponents[pathComponents.length - 1];
+
+        // Compatibility with architect
+        if (_.isObject(package.meta.plugin)) {
+            package.meta.consumes = package.meta.plugin.consumes;
+            package.meta.provides = package.meta.plugin.provides;
+        }
 
         return Q.resolve(package);
     }
@@ -118,7 +134,7 @@ function setupEntryPoints(packages) {
             package.name
         ]);
 
-        var entryPoint = util.getEntryPoint(package.path, entryPoints);
+        var entryPoint = util.getEntryPoint(package.resolvedPath, entryPoints);
         if (!entryPoint) {
             return Q.reject('unable to resolve entry point for ' + package.path);
         }
