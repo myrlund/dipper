@@ -1,7 +1,7 @@
 {
-  "name": "Dipper",
+  "name": "dipper",
   "version": "0.0.1",
-  "description": "An extremely simple DI library for Node.js.",
+  "description": "A lightweight promise-driven DI library for Node.js.",
   "main": "dipper.js",
   "dependencies": {
     "q": "^1.0.1",

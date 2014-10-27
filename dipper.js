@@ -15,7 +15,7 @@ module.exports = {
 /**
  * Bootstraps the application.
  *
- * @returns a promise resolving to the application's service registry.
+ * @returns a promise resolving to the application object.
  */
 function bootstrap(options) {
     options = _.defaults(options || {}, {
@@ -23,8 +23,25 @@ function bootstrap(options) {
         setupTimeout: 150,
     });
 
+    var application = {};
+
     return loadPackages(options)
-        .then(_.partial(setupServices, options));
+        .then(function (packages) {
+            application.packages = _.indexBy(packages, 'name');
+
+            return packages;
+        })
+
+        // Set up services.
+        .then(_.partial(setupServices, options))
+        .then(function (serviceRegistry) {
+            application.services = serviceRegistry;
+
+            // Convenience function to help with testing.
+            application.getPackageImports = _.partial(getImportedServices, serviceRegistry);
+
+            return application;
+        });
 }
 
 /**
@@ -53,7 +70,7 @@ function setupServices(options, packages) {
         var deferred = Q.defer();
 
         // Grab only the package's imports from the service registry.
-        var packageImports = _.pick(serviceRegistry, package.meta.consumes);
+        var packageImports = getImportedServices(serviceRegistry, package);
 
         // Utility for calculating package services pending registration.
         var getRemainingServices = function () {
@@ -98,3 +115,10 @@ function setupServices(options, packages) {
         return serviceRegistry;
     });
 };
+
+/**
+ * @returns the imports for the given package.
+ */
+function getImportedServices(serviceRegistry, package) {
+    return _.pick(serviceRegistry, package.meta.consumes);
+}
