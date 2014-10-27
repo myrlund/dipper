@@ -3,8 +3,7 @@ var path = require('path');
 var dipper = require('../dipper');
 
 var config = {
-    packageConfigFile: path.resolve(__dirname, 'config.sample.json'),
-    basePath: __dirname,
+    configFile: path.resolve(__dirname, 'config.sample.json'),
 };
 
 dipper.createApplication(config)

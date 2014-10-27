@@ -3,37 +3,49 @@ var Q = require('q');
 
 var packages = require('./packages');
 
-var exports = {
+module.exports = {
     createApplication: function (options, callback) {
-        var dipper = new Dipper(options);
-        return dipper.bootstrap().nodeify(callback);
+        return bootstrap(options).nodeify(callback);
     },
-    Dipper: Dipper
+    bootstrap: bootstrap,
+    loadPackages: loadPackages,
+    setupServices: setupServices,
 };
 
-function Dipper(options) {
-    this.options = _.defaults(options || {}, {
-        packageConfigFile: './config.json',
+/**
+ * Bootstraps the application.
+ *
+ * @returns a promise resolving to the application's service registry.
+ */
+function bootstrap(options) {
+    options = _.defaults(options || {}, {
+        configFile: './config.json',
         setupTimeout: 150,
     });
 
-    // Allow for providing package config directly
-    this.packageConfig = this.options.packageConfig;
+    return loadPackages(options)
+        .then(_.partial(setupServices, options));
 }
 
-Dipper.prototype.getPackageConfig = function () {
-    return this.packageConfig ?
-        Q.resolve(this.packageConfig) :
-        packages.loadConfig(this.options.packageConfigFile);
+/**
+ * @returns packages with metadata, setup functions, sorted topologically by dependencies.
+ */
+function loadPackages(options) {
+    var getPackageConfig = function () {
+        return options.config ?
+            Q.resolve(options.config) :
+            packages.loadConfig(options.configFile);
+    }
+
+    return getPackageConfig().then(packages.loadAll);
 };
 
-Dipper.prototype.loadPackages = function () {
-    return this.getPackageConfig().then(packages.loadAll);
-};
-
-Dipper.prototype.setupServices = function (packages) {
-    var self = this;
-
+/**
+ * Calls the setup functions of all the provided packages with their consumed services.
+ *
+ * @returns the application service registry.
+ */
+function setupServices(options, packages) {
     // Initialize the service registry.
     var serviceRegistry = {};
 
@@ -76,7 +88,7 @@ Dipper.prototype.setupServices = function (packages) {
         // Require registry callback within the configured setupTimeout.
         setTimeout(function () {
             deferred.reject(new Error('Package ' + package.name + ' did not register services: ' + getRemainingServices().join(', ')));
-        }, self.options.setupTimeout);
+        }, options.setupTimeout);
 
         return deferred.promise;
     }));
@@ -86,11 +98,3 @@ Dipper.prototype.setupServices = function (packages) {
         return serviceRegistry;
     });
 };
-
-Dipper.prototype.bootstrap = function () {
-    var setupServices = this.setupServices.bind(this);
-
-    return this.loadPackages().then(setupServices);
-};
-
-module.exports = exports;
